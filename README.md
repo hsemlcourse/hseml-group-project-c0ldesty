@@ -36,7 +36,7 @@
 ├── notebooks
 │   ├── 01_eda.ipynb            # EDA
 │   ├── 02_baseline.ipynb       # Baseline-модель
-│   └── 03_experiments.ipynb    # Эксперименты и ablation study
+│   └── 03_experiments.ipynb    # Эксперименты cp2
 ├── presentation                # Презентация для защиты
 ├── report
 │   ├── images                  # Изображения для отчёта
