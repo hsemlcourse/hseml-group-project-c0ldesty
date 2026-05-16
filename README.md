@@ -1,5 +1,5 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/kOqwghv0)
-# ML Project — [Название проекта]
+# ML Project — Fraud Detection for Vehicle Insurance Claims
 
 **Студент:** Алексеев Владислав Алексеевич
 
@@ -10,10 +10,10 @@
 
 1. [Описание задачи](#описание-задачи)
 2. [Структура репозитория](#структура-репозитория)
-3. [Запуски](#быстрый-старт)
+3. [Запуск](#запуск)
 4. [Данные](#данные)
 5. [Результаты](#результаты)
-7. [Отчёт](#отчёт)
+6. [Отчёт](#отчёт)
 
 
 ## Описание задачи
@@ -66,13 +66,27 @@ python -m venv .venv
 # 3. Установить зависимости
 pip install -r requirements.txt
 
-# 4. Запустить Jupyter ноутбуки
+# 4. Проверить качество кода
+make lint
+
+# 5. Запустить Jupyter ноутбуки
+```
+
+Проверку качества кода можно запустить командой:
+```bash
+make lint
+```
+Она выполняет `flake8 src tests --max-line-length=120`.
+Если `make` недоступен, можно запустить ту же проверку напрямую:
+```bash
+flake8 src tests --max-line-length=120
 ```
 
 Порядок выполнения ноутбуков:
 
 1. `notebooks/01_eda.ipynb` — загрузка, очистка, EDA, feature engineering и сохранение файлов в `data/processed/`.
 2. `notebooks/02_baseline.ipynb` — baseline-модели на raw и FE-признаках.
+3. `notebooks/03_experiments.ipynb` — расширенные эксперименты, ансамбли, подбор гиперпараметров, уменьшение размерности, настройка threshold и финальная проверка на test.
 
 ## Данные
 - `data/raw/` — исходные файлы (`fraud_oracle.csv`).
@@ -82,18 +96,24 @@ pip install -r requirements.txt
 
 
 ## Результаты
-Краткие выводы по текущему этапу (cp1):
+Краткие итоговые выводы:
 
-- Базовые линейные модели с `class_weight='balanced'` показывают высокий `recall` по классу fraud.
-- `DecisionTree` и `KNN` в baseline-режиме почти не помечают случаи как fraud и дают более низкий `recall`.
-- Feature engineering из `01_eda.ipynb` позволяет сравнить качество на raw и FE признаках в одинаковом baseline-наборе.
+- Baseline-модели показали, что для несбалансированной fraud-задачи accuracy недостаточно: важнее смотреть на `PR-AUC`, `Recall`, `F1` и `Balanced Accuracy`.
+- В `03_experiments.ipynb` были проверены ансамбли, tuned-модели после `GridSearchCV`, варианты с `TruncatedSVD` и подбор threshold на validation.
+- Лучшим финальным вариантом стал tuned `CatBoost` на FE-признаках с threshold `0.33`. Модель хорошо находит fraud-случаи, но делает это ценой большого числа ложных срабатываний.
 
 | Модель | Accuracy | Balanced Accuracy | Precision | Recall | F1 | ROC-AUC | PR-AUC | Примечание |
 |--------|----------|-------------------|-----------|--------|----|---------|--------|------------|
-| Baseline | ~0.67 | ~0.75 | ~0.14 | ~0.84 | ~0.24 | ~0.80 | ~0.16 | Лучшими baseline-моделями оказались `LogisticRegression` и `LinearSVC` |
-| Лучшая модель | — | — | — | — | — | — | — | |
+| Baseline | `0.6641 / 0.6508` | `0.7353 / 0.7510` | `0.1310 / 0.1320` | `0.8162 / 0.8649` | `0.2257 / 0.2291` | `0.7974 / 0.7884` | `0.1566 / 0.1560` | `LogisticRegression / LinearSVC` |
+| Лучшая модель | `0.7101` | `0.8129` | `0.1633` | `0.9297` | `0.2779` | `0.8680` | `0.2647` | tuned `CatBoost`, threshold `0.33`, test |
+
+Финальная confusion matrix на test:
+- `TN = 2018`
+- `FP = 881`
+- `FN = 13`
+- `TP = 172`
 
 
 ## Отчёт
 
-Финальный отчёт: [`report/report.md`](report/report.md) (промежуточные результаты пока в README.md)
+Финальный отчёт: [`report/report.md`](report/report.md)
