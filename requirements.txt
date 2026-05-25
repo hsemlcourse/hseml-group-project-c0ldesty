@@ -17,6 +17,11 @@ ipython>=8.0.0
 jupyter>=1.0.0
 ipykernel>=6.0.0
 
+# API
+fastapi>=0.110.0
+uvicorn>=0.27.0
+streamlit>=1.35.0
+
 # Code quality and tests
 flake8>=6.1.0
 pytest>=7.4.0

@@ -11,9 +11,11 @@
 1. [Описание задачи](#описание-задачи)
 2. [Структура репозитория](#структура-репозитория)
 3. [Запуск](#запуск)
-4. [Данные](#данные)
-5. [Результаты](#результаты)
-6. [Отчёт](#отчёт)
+4. [API](#api)
+5. [Streamlit-интерфейс](#streamlit-интерфейс)
+6. [Данные](#данные)
+7. [Результаты](#результаты)
+8. [Отчёт](#отчёт)
 
 
 ## Описание задачи
@@ -42,6 +44,8 @@
 │   ├── images                  # Изображения для отчёта
 │   └── report.md               # Финальный отчёт
 ├── src
+│   ├── api.py                  # FastAPI для запросов к модели
+│   ├── streamlit_app.py        # Streamlit-интерфейс
 │   ├── preprocessing.py        # Предобработка данных
 │   └── modeling.py             # Обучение и оценка моделей
 ├── tests
@@ -87,6 +91,101 @@ flake8 src tests --max-line-length=120
 1. `notebooks/01_eda.ipynb` — загрузка, очистка, EDA, feature engineering и сохранение файлов в `data/processed/`.
 2. `notebooks/02_baseline.ipynb` — baseline-модели на raw и FE-признаках.
 3. `notebooks/03_experiments.ipynb` — расширенные эксперименты, ансамбли, подбор гиперпараметров, уменьшение размерности, настройка threshold и финальная проверка на test.
+
+## API
+
+Для отправки запросов реализован FastAPI-сервис в `src/api.py`.
+При старте сервис обучает CatBoost pipeline на `data/processed/fraud_oracle_fe.csv` и использует финальный threshold `0.33`.
+
+Запуск:
+
+```bash
+python -m uvicorn src.api:app --reload
+```
+
+Или через Makefile:
+
+```bash
+make api
+```
+
+После запуска доступны:
+
+- `GET /health` — проверка, что сервис работает.
+- `GET /model-info` — информация о модели, threshold и количестве признаков.
+- `POST /predict` — прогноз fraud для одной или нескольких заявок.
+
+Пример запроса для одной заявки:
+
+```bash
+curl -X POST "http://127.0.0.1:8000/predict" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "Month": "Dec",
+    "WeekOfMonth": 5,
+    "DayOfWeek": "Wednesday",
+    "Make": "Honda",
+    "AccidentArea": "Urban",
+    "DayOfWeekClaimed": "Tuesday",
+    "MonthClaimed": "Jan",
+    "WeekOfMonthClaimed": 1,
+    "Sex": "Female",
+    "MaritalStatus": "Single",
+    "Age": 21,
+    "Fault": "Policy Holder",
+    "PolicyType": "Sport - Liability",
+    "VehicleCategory": "Sport",
+    "VehiclePrice": "more than 69000",
+    "Deductible": 300,
+    "DriverRating": 1,
+    "Days_Policy_Accident": "more than 30",
+    "Days_Policy_Claim": "more than 30",
+    "PastNumberOfClaims": "none",
+    "AgeOfVehicle": "3 years",
+    "AgeOfPolicyHolder": "26 to 30",
+    "PoliceReportFiled": "No",
+    "WitnessPresent": "No",
+    "AgentType": "External",
+    "NumberOfSuppliments": "none",
+    "AddressChange_Claim": "1 year",
+    "NumberOfCars": "3 to 4",
+    "Year": 1994,
+    "BasePolicy": "Liability"
+  }'
+```
+
+Пример ответа:
+
+```json
+{
+  "threshold": 0.33,
+  "predictions": [
+    {
+      "fraud_probability": 0.12,
+      "fraud_prediction": 0
+    }
+  ]
+}
+```
+
+## Streamlit-интерфейс
+
+Для ручной проверки заявки добавлен Streamlit-интерфейс в `src/streamlit_app.py`.
+Он использует ту же финальную модель, что и API: CatBoost на FE-признаках с threshold `0.33`.
+
+Запуск:
+
+```bash
+python -m streamlit run src/streamlit_app.py
+```
+
+Или через Makefile:
+
+```bash
+make streamlit
+```
+
+После запуска откроется локальная страница Streamlit. В форме можно выбрать признаки страховой заявки и нажать `Predict fraud`. Интерфейс покажет вероятность fraud, threshold и итоговый класс.
 
 ## Данные
 - `data/raw/` — исходные файлы (`fraud_oracle.csv`).
